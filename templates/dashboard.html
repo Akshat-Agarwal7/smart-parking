@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParkEase – Smart Parking</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: #f4f6fb;
+    color: #1e293b;
+  }
+
+  /* NAV */
+  nav {
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo { font-size: 1.2rem; font-weight: 800; color: #2563eb; }
+
+  .nav-status {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  /* PAGE */
+  .container {
+    max-width: 960px;
+    margin: 32px auto;
+    padding: 0 20px;
+  }
+
+  h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+  .subtitle { color: #64748b; font-size: 0.9rem; margin-bottom: 28px; }
+
+  /* STATS */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .stat {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 18px 20px;
+    text-align: center;
+  }
+
+  .stat-number { font-size: 1.8rem; font-weight: 800; }
+  .stat-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+  .blue { color: #2563eb; }
+  .green { color: #16a34a; }
+  .red { color: #dc2626; }
+
+  /* MAIN LAYOUT */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* CARD */
+  .card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .card-head {
+    padding: 18px 22px;
+    border-bottom: 1px solid #f1f5f9;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+
+  .card-body { padding: 22px; }
+
+  /* PARKING GRID */
+  .grid-wrap {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .aisle-label {
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 8px 0;
+    border-top: 2px dashed #e2e8f0;
+    border-bottom: 2px dashed #e2e8f0;
+    margin: 10px 0;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  /* SLOT */
+  .slot {
+    aspect-ratio: 1.2;
+    border-radius: 8px;
+    border: 2px solid;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 0.6rem;
+    font-weight: 600;
+  }
+
+  .slot .icon { font-size: 1rem; }
+
+  .slot.free   { background: #f0fdf4; border-color: #86efac; color: #15803d; }
+  .slot.free:hover { background: #dcfce7; border-color: #16a34a; transform: scale(1.05); }
+  .slot.taken  { background: #fafafa; border-color: #fca5a5; color: #cbd5e1; cursor: not-allowed; }
+  .slot.picked { background: #eff6ff; border-color: #2563eb; color: #2563eb; transform: scale(1.05); box-shadow: 0 0 0 3px #bfdbfe; }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    gap: 18px;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+
+  .dot {
+    width: 12px; height: 12px;
+    border-radius: 3px; border: 2px solid;
+  }
+
+  .d-free   { background: #f0fdf4; border-color: #16a34a; }
+  .d-taken  { background: #fafafa; border-color: #fca5a5; }
+  .d-picked { background: #eff6ff; border-color: #2563eb; }
+
+  /* FORM */
+  .slot-display {
+    background: #f8fafc;
+    border: 2px dashed #e2e8f0;
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    margin-bottom: 18px;
+    min-height: 66px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+
+  .slot-display.active {
+    background: #eff6ff;
+    border-color: #2563eb;
+    border-style: solid;
+  }
+
+  .slot-display .big { font-size: 1.2rem; font-weight: 800; color: #2563eb; }
+  .slot-display .small { font-size: 0.75rem; color: #94a3b8; margin-top: 2px; }
+
+  label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 6px;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 10px 13px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.85rem;
+    color: #1e293b;
+    outline: none;
+    margin-bottom: 14px;
+    background: #fff;
+  }
+
+  input:focus, select:focus { border-color: #2563eb; box-shadow: 0 0 0 3px #dbeafe; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  button {
+    width: 100%;
+    padding: 12px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  button:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 4px 12px #93c5fd; }
+  button:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* MODAL */
+  .overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(15,23,42,0.5);
+    z-index: 100;
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .overlay.show { display: flex; }
+
+  .ticket {
+    background: white;
+    border-radius: 20px;
+    width: 400px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+    animation: pop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  @keyframes pop {
+    from { transform: scale(0.8); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+
+  .ticket-header {
+    background: linear-gradient(135deg, #1e40af, #2563eb, #3b82f6);
+    color: white;
+    padding: 26px 26px 22px;
+  }
+
+  .t-brand { font-size: 0.8rem; font-weight: 700; opacity: 0.8; margin-bottom: 12px; letter-spacing: 0.05em; }
+
+  .t-slot-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .t-slot-num { font-size: 3.2rem; font-weight: 800; line-height: 1; }
+  .t-slot-lbl { font-size: 0.7rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.08em; }
+  .t-car { font-size: 2.4rem; }
+
+  .t-confirmed {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 20px;
+    padding: 3px 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    margin-top: 10px;
+  }
+
+  /* TEAR */
+  .tear {
+    display: flex; align-items: center;
+    background: #f4f6fb;
+  }
+
+  .tear-circle { width: 22px; height: 22px; border-radius: 50%; background: #f4f6fb; flex-shrink: 0; }
+  .tear-circle.l { margin-left: -11px; }
+  .tear-circle.r { margin-right: -11px; }
+  .tear-line { flex: 1; border-top: 2px dashed #e2e8f0; }
+
+  .ticket-body { padding: 20px 24px; }
+
+  .t-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .t-field {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+
+  .t-field-lbl { font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+  .t-field-val { font-size: 0.85rem; font-weight: 700; color: #1e293b; }
+  .t-field-val.accent { color: #2563eb; }
+
+  .t-barcode {
+    display: flex; gap: 1.5px; justify-content: center;
+    background: white; padding: 10px; border-radius: 8px;
+    border: 1px solid #e2e8f0; margin-bottom: 6px;
+  }
+
+  .bar { background: #1e293b; border-radius: 1px; }
+
+  .t-barcode-id { text-align: center; font-size: 0.65rem; color: #94a3b8; letter-spacing: 0.15em; margin-bottom: 14px; }
+
+  .ticket-foot {
+    background: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+    padding: 14px 24px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  .t-foot-info { font-size: 0.72rem; color: #64748b; line-height: 1.6; }
+  .t-amount { font-size: 1.4rem; font-weight: 800; color: #16a34a; }
+  .t-amount-lbl { font-size: 0.65rem; color: #94a3b8; text-align: right; }
+
+  .ticket-actions { display: flex; gap: 10px; padding: 14px 24px 18px; }
+
+  .btn-close {
+    flex: 1; background: white; color: #64748b;
+    border: 1.5px solid #e2e8f0; font-size: 0.82rem;
+  }
+
+  .btn-close:hover { background: #f8fafc; transform: none; box-shadow: none; }
+  .btn-print { flex: 1; font-size: 0.82rem; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">🅿 ParkEasee</div>
+  <div class="nav-status">● Facility Open</div>
+</nav>
+
+<div class="container">
+  <h1>Reserve a Parking Slot</h1>
+  <p class="subtitle">Click any available slot, fill in your details, and confirm your booking.</p>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-number blue">40</div><div class="stat-label">Total Slots</div></div>
+    <div class="stat"><div class="stat-number green" id="sAvail">—</div><div class="stat-label">Available</div></div>
+    <div class="stat"><div class="stat-number red" id="sBooked">—</div><div class="stat-label">Occupied</div></div>
+  </div>
+
+  <div class="layout">
+
+    <div class="card">
+      <div class="card-head">🗺 Floor Plan — 40 Slots</div>
+      <div class="card-body">
+        <div class="grid-wrap" id="grid"></div>
+        <div class="legend">
+          <div class="legend-item"><div class="dot d-free"></div> Available</div>
+          <div class="legend-item"><div class="dot d-taken"></div> Occupied</div>
+          <div class="legend-item"><div class="dot d-picked"></div> Your Pick</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">📋 Booking Form</div>
+      <div class="card-body">
+
+        <div class="slot-display" id="slotDisplay">
+          <div class="small">👆 Select a slot from the floor plan</div>
+        </div>
+
+        <label>Full Name</label>
+        <input type="text" id="name" placeholder="e.g. Arjun Verma">
+
+        <label>Vehicle Number</label>
+        <input type="text" id="vehicle" placeholder="e.g. PB10AB1234" oninput="this.value=this.value.toUpperCase()">
+
+        <div class="two-col">
+          <div>
+            <label>Vehicle Type</label>
+            <select id="vtype">
+              <option>Sedan</option>
+              <option>SUV</option>
+              <option>Hatchback</option>
+              <option>Van</option>
+            </select>
+          </div>
+          <div>
+            <label>Duration</label>
+            <select id="duration">
+              <option value="1">1 Hour</option>
+              <option value="2">2 Hours</option>
+              <option value="3">3 Hours</option>
+              <option value="4">4 Hours</option>
+              <option value="6">6 Hours</option>
+              <option value="24">Full Day</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="bookBtn" disabled onclick="book()">🔒 Confirm Booking</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="ticket" id="ticket"></div>
+</div>
+
+<script>
+  let occupied = new Set();
+
+function loadSlots(){
+    fetch("/slots")
+    .then(res => res.json())
+    .then(data => {
+        occupied = new Set(data.booked);
+        buildGrid();
+    });
+}
+  const icons = { Sedan:'🚗', SUV:'🚙', Hatchback:'🚕', Van:'🚐' };
+  let picked = null;
+
+  function buildGrid() {
+    let html = '';
+    for (let r = 0; r < 5; r++) {
+      if (r === 2) html += `<div class="aisle-label">↔ Drive Aisle</div>`;
+      html += `<div class="row">`;
+      for (let c = 0; c < 8; c++) {
+        const n = r * 8 + c + 1;
+        const cls = occupied.has(n) ? 'taken' : (picked === n ? 'picked' : 'free');
+        const icon = occupied.has(n) ? '🚗' : (picked === n ? '✓' : '🅿️');
+        html += `<div class="slot ${cls}" id="s${n}" onclick="pick(${n})">
+          <span class="icon">${icon}</span>
+          <span>${String(n).padStart(2,'0')}</span>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+    document.getElementById('grid').innerHTML = html;
+    document.getElementById('sAvail').textContent = 40 - occupied.size;
+    document.getElementById('sBooked').textContent = occupied.size;
+  }
+
+  function pick(n) {
+    if (occupied.has(n)) return;
+    picked = n;
+    buildGrid();
+    document.getElementById('slotDisplay').className = 'slot-display active';
+    document.getElementById('slotDisplay').innerHTML = `
+      <div class="big">Slot ${String(n).padStart(2,'0')}</div>
+      <div class="small">Row ${Math.ceil(n/8)} · Column ${((n-1)%8)+1}</div>
+    `;
+    document.getElementById('bookBtn').disabled = false;
+  }
+
+  function book() {
+  const name = document.getElementById('name').value.trim();
+  const vehicle = document.getElementById('vehicle').value.trim();
+
+  if (!name || !vehicle) {
+    alert('Please enter your name and vehicle number.');
+    return;
+  }
+
+  const vtype = document.getElementById('vtype').value;
+  const hrs = parseInt(document.getElementById('duration').value);
+
+  const now = new Date();
+  const exit = new Date(now.getTime() + hrs * 3600000);
+  const id = 'PKE' + Date.now().toString().slice(-6);
+  const amount = hrs * 30;
+
+  // 🔥 SEND TO BACKEND
+  fetch("/book", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      slot: picked,
+      name: name,
+      vehicle: vehicle
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+
+    if (data.status === "ok") {
+
+      // ✅ SHOW SAME UI TICKET (no change in design)
+      showTicket({
+        name, vehicle, vtype, hrs, now, exit, id, amount, slot: picked
+      });
+
+      picked = null;
+
+      // 🔥 reload from database
+      loadSlots();
+
+      document.getElementById('bookBtn').disabled = true;
+      document.getElementById('name').value = '';
+      document.getElementById('vehicle').value = '';
+
+      document.getElementById('slotDisplay').className = 'slot-display';
+      document.getElementById('slotDisplay').innerHTML =
+        `<div class="small">👆 Select a slot from the floor plan</div>`;
+
+    } else {
+      alert("Slot already booked!");
+    }
+  });
+}
+
+  function showTicket(d) {
+    const tf = t => t.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', hour12:true });
+    const df = d.now.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+    const bars = Array.from({length:36}, () => {
+      const w = [1,1,2,3][Math.floor(Math.random()*4)];
+      return `<div class="bar" style="width:${w}px;height:${Math.random()>.5?36:26}px"></div>`;
+    }).join('');
+
+    document.getElementById('ticket').innerHTML = `
+      <div class="ticket-header">
+        <div class="t-brand">🅿 ParkEase · Parking Pass</div>
+        <div class="t-slot-row">
+          <div>
+            <div class="t-slot-lbl">Slot Number</div>
+            <div class="t-slot-num">${String(d.slot).padStart(2,'0')}</div>
+          </div>
+          <div class="t-car">${icons[d.vtype]||'🚗'}</div>
+        </div>
+        <div class="t-confirmed">✓ Booking Confirmed</div>
+      </div>
+      <div class="tear">
+        <div class="tear-circle l"></div>
+        <div class="tear-line"></div>
+        <div class="tear-circle r"></div>
+      </div>
+      <div class="ticket-body">
+        <div class="t-grid">
+          <div class="t-field"><div class="t-field-lbl">Name</div><div class="t-field-val">${d.name}</div></div>
+          <div class="t-field"><div class="t-field-lbl">Vehicle No.</div><div class="t-field-val accent">${d.vehicle}</div></div>
+          <div class="t-field"><div class="t-field-lbl">Entry</div><div class="t-field-val">${tf(d.now)}</div></div>
+          <div class="t-field"><div class="t-field-lbl">Exit By</div><div class="t-field-val">${tf(d.exit)}</div></div>
+          <div class="t-field"><div class="t-field-lbl">Date</div><div class="t-field-val">${df}</div></div>
+          <div class="t-field"><div class="t-field-lbl">Duration</div><div class="t-field-val">${d.hrs} Hr${d.hrs>1?'s':''}</div></div>
+        </div>
+        <div class="t-barcode">${bars}</div>
+        <div class="t-barcode-id">${d.id}</div>
+      </div>
+      <div class="ticket-foot">
+        <div class="t-foot-info">ID: <strong>${d.id}</strong><br>₹30/hr · Pay at exit</div>
+        <div>
+          <div class="t-amount-lbl">Total</div>
+          <div class="t-amount">₹${d.amount}</div>
+        </div>
+      </div>
+      <div class="ticket-actions">
+        <button class="btn-close" onclick="closeTicket()">✕ Close</button>
+        <button class="btn-print" onclick="window.print()">🖨️ Print</button>
+      </div>
+    `;
+    document.getElementById('overlay').classList.add('show');
+  }
+
+  function closeTicket() { document.getElementById('overlay').classList.remove('show'); }
+  document.getElementById('overlay').addEventListener('click', e => { if (e.target.id === 'overlay') closeTicket(); });
+
+  loadSlots();
+</script>
+</body>
+</html>

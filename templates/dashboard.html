@@ -136,6 +136,8 @@
     transition: all 0.15s;
     font-size: 0.6rem;
     font-weight: 600;
+    padding: 4px;
+    overflow: hidden;
   }
 
   .slot .icon { font-size: 1rem; }
@@ -315,6 +317,7 @@
     padding: 10px 12px;
   }
 
+
   .t-field-lbl { font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
   .t-field-val { font-size: 0.85rem; font-weight: 700; color: #1e293b; }
   .t-field-val.accent { color: #2563eb; }
@@ -323,6 +326,12 @@
     display: flex; gap: 1.5px; justify-content: center;
     background: white; padding: 10px; border-radius: 8px;
     border: 1px solid #e2e8f0; margin-bottom: 6px;
+  }
+
+  .slot small {
+  font-size: 10px;
+  opacity: 0.7;
+  line-height: 1;
   }
 
   .bar { background: #1e293b; border-radius: 1px; }
@@ -354,7 +363,7 @@
 <body>
 
 <nav>
-  <div class="logo">🅿 ParkEasee</div>
+  <div class="logo">🅿 ParkEase</div>
   <div class="nav-status">● Facility Open</div>
 </nav>
 
@@ -431,13 +440,19 @@
 </div>
 
 <script>
-  let occupied = new Set();
+  let occupied = new Map(); 
 
 function loadSlots(){
     fetch("/slots")
     .then(res => res.json())
     .then(data => {
-        occupied = new Set(data.booked);
+
+        occupied = new Map();
+
+        data.forEach(item => {
+            occupied.set(item.slot, item.end_time);
+        });
+
         buildGrid();
     });
 }
@@ -453,11 +468,21 @@ function loadSlots(){
         const n = r * 8 + c + 1;
         const cls = occupied.has(n) ? 'taken' : (picked === n ? 'picked' : 'free');
         const icon = occupied.has(n) ? '🚗' : (picked === n ? '✓' : '🅿️');
+        let timeText = "";
+
+if (occupied.has(n)) {
+    let end = new Date(occupied.get(n));
+    timeText = end.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
         html += `<div class="slot ${cls}" id="s${n}" onclick="pick(${n})">
-          <span class="icon">${icon}</span>
-          <span>${String(n).padStart(2,'0')}</span>
-        </div>`;
-      }
+  <span class="icon">${icon}</span>
+  <span>${String(n).padStart(2,'0')}</span>
+  ${occupied.has(n) ? `<small>${timeText}</small>` : ""}
+</div>`;
+    }
       html += `</div>`;
     }
     document.getElementById('grid').innerHTML = html;
@@ -503,7 +528,8 @@ function loadSlots(){
     body: JSON.stringify({
       slot: picked,
       name: name,
-      vehicle: vehicle
+      vehicle: vehicle,
+      duration: hrs 
     })
   })
   .then(res => res.json())
